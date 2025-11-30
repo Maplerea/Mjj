@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>John Jay Blackboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{ --bg:#f7f7f9; --panel:#ffffff; --muted:#566270; --accent:#0033a0; --accent-2:#0077cc; --card-radius:8px; --text:#111; }
+
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Roboto',Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+
+    header.topbar{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--accent);color:white;}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
+    .logo img{height:32px}
+    .student-info{color:white;position:relative;}
+    .settings-btn{background:none;border:0;font-size:18px;cursor:pointer;color:white}
+
+    .settings-panel{position:absolute;top:36px;right:0;background:var(--panel);color:var(--text);border:1px solid #eef2f6;padding:12px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:none;width:200px;z-index:100;}
+
+    .layout{display:flex;min-height:calc(100vh - 56px)}
+    aside.sidebar{width:200px;background:var(--panel);padding:20px;border-right:1px solid #eef2f6; display:flex;flex-direction:column;}
+    .side-nav{margin-top:20px; display:flex;flex-direction:column;gap:10px;}
+    .side-nav button{background:transparent;border:0;text-align:left;padding:10px;border-radius:6px;cursor:pointer;color:var(--muted);font-weight:500;}
+    .side-nav button.active{color:var(--accent);background:rgba(0,51,160,0.08);}
+
+    main.content{flex:1;padding:20px}
+    .semester{color:var(--muted);margin-bottom:12px}
+    .class-grid{display:flex;flex-direction:column;gap:15px;}
+    .class-card{background:var(--panel);padding:24px;border-radius:var(--card-radius);border:1px solid #eef2f6;cursor:pointer;transition:box-shadow .12s,transform .12s;color:var(--text); font-size:16px;}
+    .class-card:hover{box-shadow:0 6px 18px rgba(16,24,40,0.06);transform:translateY(-2px);}
+
+    .details{background:var(--panel);padding:18px;border-radius:8px;border:1px solid #eef2f6;margin-top:20px;color:var(--text);}
+    .close-btn{float:right;background:none;border:0;font-size:18px;cursor:pointer;color:var(--muted)}
+    ul.assign-list{list-style:none;padding:0;margin:12px 0}
+    ul.assign-list li{padding:6px 0;border-bottom:1px solid #f1f3f5}
+
+    footer{background:var(--accent);color:white;padding:16px;text-align:center;font-size:13px;margin-top:18px;line-height:1.5; display:flex;flex-direction:column;gap:4px;align-items:center;}
+    footer img{height:28px;}
+
+    @media (max-width:900px){aside.sidebar{display:none}.layout{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">
+      <img src="images/johnjay-logo.png" alt="John Jay Logo">
+      John Jay Blackboard
+    </div>
+    <div class="student-info">
+      Matthew Quitlong · ID: 1467492 
+      <button id="settingsBtn" class="settings-btn" title="Settings">⚙️</button>
+      <div id="settingsPanel" class="settings-panel">
+        <p><strong>Settings</strong></p>
+        <p>Notification Preferences</p>
+        <p>Profile</p>
+        <p>Help</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <nav class="side-nav">
+        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+        <button class="nav-btn" data-view="courses">Courses</button>
+        <button class="nav-btn" data-view="grades">Grades</button>
+        <button class="nav-btn" data-view="settings">Settings</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <div class="semester">Fall Semester · Ends December 15</div>
+      <div class="class-grid" id="classGrid">
+        <div class="class-card" data-key="calc">Advanced Calculus 2<br><small>Course Code: MTH 4020</small></div>
+        <div class="class-card" data-key="techwrite">Technical Writing<br><small>Course Code: ENG 2150</small></div>
+        <div class="class-card" data-key="datastruct">Data Structures & Algorithms<br><small>Course Code: CIS 4100</small></div>
+        <div class="class-card" data-key="argue">Argumentation & Debate<br><small>Course Code: COM 3071</small></div>
+        <div class="class-card" data-key="comporg">Computer Organization<br><small>Course Code: CIS 2300</small></div>
+      </div>
+
+      <section id="details" class="details hidden">
+        <button id="closeDetails" class="close-btn">✖</button>
+        <h2 id="detailsTitle">Course Title</h2>
+        <div id="detailsProf" style="color:var(--muted);margin-bottom:12px"></div>
+        <div id="detailsGrade" style="color:var(--accent);margin-bottom:12px;font-weight:500;"></div>
+        <h3>Assignments</h3>
+        <ul id="detailsAssignments" class="assign-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <img src="https://i.imgur.com/etAi95t.png" alt="CUNY Logo">
+    CUNY John Jay Blackboard — Fall 2025<br>
+    John Jay College | 524 West 59th Street<br>
+    New York, NY 10019<br>
+    212-237-8000 | info@jjay.cuny.edu<br>
+    The City University of New York (CUNY)
+  </footer>
+
+  <script>
+    const classData = {
+      calc: { title: 'Advanced Calculus 2', code:'MTH 4020', professor:'Yanghui Liu', email:'yanghui.liu@jjay.cuny.edu', grade:'D', assignments:[
+        {name:'Homework 1', status:'Completed', due:'Nov 5'},
+        {name:'Quiz 1', status:'Completed', due:'Nov 10'},
+        {name:'Homework 2', status:'Completed', due:'Nov 12'},
+        {name:'Midterm', status:'Completed', due:'Nov 15'},
+        {name:'Project', status:'In Progress', due:'Dec 10'}
+      ]},
+      techwrite:{title:'Technical Writing', code:'ENG 2150', professor:'Louis-Pierre Arguin', email:'louis-pierre.arguin@jjay.cuny.edu', grade:'A', assignments:[
+        {name:'Essay 1', status:'Completed', due:'Nov 3'},
+        {name:'Peer Review', status:'Completed', due:'Nov 8'},
+        {name:'Essay 2', status:'Completed', due:'Nov 14'},
+        {name:'Final Paper', status:'In Progress', due:'Dec 12'},
+        {name:'Presentation', status:'In Progress', due:'Dec 15'}
+      ]},
+      datastruct:{title:'Data Structures & Algorithms', code:'CIS 4100', professor:'Karl Lang', email:'karl.lang@jjay.cuny.edu', grade:'B', assignments:[
+        {name:'Lab 1', status:'Completed', due:'Nov 4'},
+        {name:'Lab 2', status:'Completed', due:'Nov 9'},
+        {name:'Midterm', status:'Completed', due:'Nov 13'},
+        {name:'Project', status:'In Progress', due:'Dec 11'},
+        {name:'Final Exam', status:'Incomplete', due:'Dec 15'}
+      ]},
+      argue:{title:'Argumentation & Debate', code:'COM 3071', professor:'Joseph Boninger', email:'jboninger@jjay.cuny.edu', grade:'C', assignments:[
+        {name:'Debate Prep 1', status:'Completed', due:'Nov 6'},
+        {name:'Debate Prep 2', status:'Completed', due:'Nov 11'},
+        {name:'Midterm Speech', status:'Completed', due:'Nov 16'},
+        {name:'Final Debate', status:'In Progress', due:'Dec 14'},
+        {name:'Reflection Paper', status:'Incomplete', due:'Dec 15'}
+      ]},
+      comporg:{title:'Computer Organization', code:'CIS 2300', professor:'Mohamed Ben Zid', email:'mbenzid@jjay.cuny.edu', grade:'A', assignments:[
+        {name:'Lab 1', status:'Completed', due:'Nov 5'},
+        {name:'Lab 2', status:'Completed', due:'Nov 10'},
+        {name:'Midterm', status:'Completed', due:'Nov 15'},
+        {name:'Project', status:'In Progress', due:'Dec 12'},
+        {name:'Final Exam', status:'Incomplete', due:'Dec 15'}
+      ]}
+    };
+
+    function openDetails(key){
+      const data=classData[key];
+      document.getElementById('details').classList.remove('hidden');
+      document.getElementById('detailsTitle').textContent=data.title+' ('+data.code+')';
+      document.getElementById('detailsProf').innerHTML=`Professor: ${data.professor}<br>Email: <a href='mailto:${data.email}'>${data.email}</a>`;
+      document.getElementById('detailsGrade').textContent = `Grade: ${data.grade}`;
+      const ul=document.getElementById('detailsAssignments');
+      ul.innerHTML='';
+      data.assignments.forEach(a=>{
+        const li=document.createElement('li');
+        li.textContent=`${a.name} — ${a.status} • due ${a.due}`;
+        ul.appendChild(li);
+      });
+    }
+
+    document.querySelectorAll('.class-card').forEach(el=>{
+      el.addEventListener('click',()=>{openDetails(el.dataset.key)})
+    });
+
+    document.getElementById('closeDetails').addEventListener('click',()=>{document.getElementById('details').classList.add('hidden');});
+
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsPanel = document.getElementById('settingsPanel');
+    settingsBtn.addEventListener('click',()=>{settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';});
+    document.addEventListener('click',(e)=>{if(!settingsPanel.contains(e.target) && e.target!==settingsBtn){settingsPanel.style.display='none';}});
+  </script>
+</body>
+</html>
